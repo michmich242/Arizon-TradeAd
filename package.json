@@ -9,6 +9,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module"
-
+  "type": "module",
+  "dependencies": {
+    "discord.js": "^14.22.1"
+  }
 }

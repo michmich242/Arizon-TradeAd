@@ -13,7 +13,7 @@
 
     ],
 
-    "tags" : true,
+    "tags_send" : ["rap", "demand"],
 
-    "tags_send" : ["rap", "demand", "upgrade", "downgrade"]
+    "tags_available" : ["adds", "upgrade", "downgrade", "any", "wishlist", "demand", "rares", "rap", "robux", "projecteds"]
 }
