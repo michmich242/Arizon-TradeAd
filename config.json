@@ -1,19 +1,29 @@
 {
-    "roblox_id" : 378140083,
-
-    "RoliVerification" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2ZXJzaW9uIjoxLCJwbGF5ZXJfZGF0YSI6eyJuYW1lIjoiQ2h6ckllcyIsImlkIjozNzgxNDAwODN9LCJpYXQiOjE3NTM1MjkwMjEsImV4cCI6MTc2MTMwNTA4MX0.GogxLasjOjS5GN5Fqms2YKpo7M4IOy_7TwkwVC1wras",
-
-    "items_send" : [
-        25556219,
-        16899436,
-        19027209
-    ],
-
-    "items_request" : [
-
-    ],
-
-    "tags_send" : ["rap", "demand"],
-
-    "tags_available" : ["adds", "upgrade", "downgrade", "any", "wishlist", "demand", "rares", "rap", "robux", "projecteds"]
+     "roblox_id": 123456789,
+     "RoliVerification": "REPLACE-WITH-YOUR-ROLIMONS-VERIFICATION",
+     "RobloxSecurity": "REPLACE-WITH-YOUR-ROBLOX-COOKIES",
+     "items_send": [
+          123456789,
+          123456789
+     ],
+     "items_request": [
+        16899436
+     ],
+     "tags_send": [
+          "rap",
+          "demand",
+          "adds"
+     ],
+     "tags_available": [
+          "adds",
+          "upgrade",
+          "downgrade",
+          "any",
+          "wishlist",
+          "demand",
+          "rares",
+          "rap",
+          "robux",
+          "projecteds"
+     ]
 }
