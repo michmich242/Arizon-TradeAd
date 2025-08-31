@@ -30,6 +30,16 @@ const hook = new WebhookClient({
     url : process.env.DISCORD_WEBHOOK
 });
 
+
+async function run_send_inbound(){
+
+    while(true){
+        await send_inbound();
+        await sleep(180000);
+    }
+}
+
+
 async function send_inbound(){
 
 
@@ -43,63 +53,69 @@ async function send_inbound(){
         });
         const hold = await inbounds.json();
 
-        console.log(hold.data[0]);
 
 
 
-        console.log(prev_id);
-
-        console.log(hold.data[0].id);
-
-
-        if(prev_id == hold.data[0].id){
-
-            const inbound_detail = await fetch("https://trades.roblox.com/v2/trades/" + hold.data[0].id, {
-                method : "GET",
-
-                headers : {
-                    "Cookie" : ".ROBLOSECURITY=" + config.RobloxSecurity
-                }
-            });
-
-            const hold_details = await inbound_detail.json();
-
-
-            console.log(hold_details);
-
-
-            await hook.send({
-            username: hold_details.participantAOffer.user.displayName,
-            avatarURL: "https://example.com/avatar.png",
-            embeds: [
-                {
-                title: "NEW TRADE INBOUND BY: " + hold_details.participantBOffer.user.displayName,
-                url: "https://www.roblox.com/trades?tab=Inbound",
-                description: "All tests passed.",
-                color: 0x00B894,                    // integer RGB (hex allowed)
-                timestamp: new Date().toISOString(),// shows a small time next to footer
-                author: {
-                    name: "CI Runner",
-                    url: "https://example.com",
-                    icon_url: "https://example.com/ci.png"
-                },
-                thumbnail: { url: "https://example.com/thumb.png" },
-                image:     { url: "https://example.com/large.png" },
-                fields: [
-                    { name: "Commit", value: "`abc123`", inline: true },
-                    { name: "Duration", value: "2m 14s", inline: true },
-                    { name: "Env", value: "prod", inline: true }
-                ],
-                footer: {
-                    text: "Powered by MyBot • v1.2.3",
-                    icon_url: "https://example.com/footer-icon.png"
-                }
-                }
-            ]
-            });
-
-            retrieveANDsaveID(hold.data[0].id);
+        if(prev_id != hold.data[0].id){
+            return;
         }
+
+        const inbound_detail = await fetch("https://trades.roblox.com/v2/trades/" + hold.data[0].id, {
+            method : "GET",
+
+            headers : {
+                "Cookie" : ".ROBLOSECURITY=" + config.RobloxSecurity
+            }
+        });
+
+        const hold_details = await inbound_detail.json();
+
+
+        console.log(hold_details);
+
+
+        const grab_user_image = await fetch("https://www.roblox.com/users/" + config.roblox_id + "/profile", {
+            method : "GET",
+            headers : {
+                "Accept" : "text/html"
+            }
+        });
+
+        const grab_html = await grab_user_image.text();
+        console.log(grab_html);
+
+
+        await hook.send({
+        username: hold_details.participantAOffer.user.displayName,
+        avatarURL: "https://example.com/avatar.png",
+        embeds: [
+            {
+            title: "NEW TRADE INBOUND BY: " + hold_details.participantBOffer.user.displayName,
+            url: "https://www.roblox.com/trades?tab=Inbound",
+            description: "All tests passed.",
+            color: 0x00B894,                    // integer RGB (hex allowed)
+            timestamp: new Date().toISOString(),// shows a small time next to footer
+            author: {
+                name: "CI Runner",
+                url: "https://example.com",
+                icon_url: "https://example.com/ci.png"
+            },
+            thumbnail: { url: "https://example.com/thumb.png" },
+            image:     { url: "https://example.com/large.png" },
+            fields: [
+                { name: "Commit", value: "`abc123`", inline: true },
+                { name: "Duration", value: "2m 14s", inline: true },
+                { name: "Env", value: "prod", inline: true }
+            ],
+            footer: {
+                text: "Powered by MyBot • v1.2.3",
+                icon_url: "https://example.com/footer-icon.png"
+            }
+            }
+        ]
+        });
+
+        retrieveANDsaveID(hold.data[0].id);
 
 
 }
@@ -229,9 +245,9 @@ async function main(){
         return;
     }
 
-    run_send_ad();
+    //run_send_ad();
 
-    //send_inbound();
+    run_send_inbound();
 
 
 }
