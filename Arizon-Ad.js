@@ -7,16 +7,18 @@ import sharp from "sharp";
 
 
 
-let prev_id = "";
+let prev_date = {};
+
+let rolimon_values = {};
 
 
 
 function retrieveANDsaveID(new_id){
-    prev_id = new_id;
+    prev_date = new_id;
     fs.writeFileSync("storage/Recent_T_ID.txt", String(new_id), "utf8");
 
 
-    return prev_id;
+    return prev_date;
 }
 
 
@@ -34,13 +36,15 @@ async function run_send_inbound(){
 
     while(true){
         await send_inbound();
-        await sleep(180000);
+        await sleep(20000);
     }
 }
 
 
 
 async function grab_assets(asset_IDS){
+
+
 
     const asset_images = await fetch("https://thumbnails.roblox.com/v1/assets?assetIds=" + asset_IDS + "&size=150x150&isCircular=false&format=Png", {
         method : "GET",
@@ -55,7 +59,25 @@ async function grab_assets(asset_IDS){
 
 }
 
+async function run_retrieve_IDValues(){
+    while(true){
+        await retrieve_IDValues();
+        await sleep(300000);
+    }
 
+}
+
+async function retrieve_IDValues(){
+    const grab_values = await fetch("https://api.rolimons.com/items/v2/itemdetails", {
+        method : "GET",
+        headers : {
+            "Accept" : "application/json"
+        }
+    });
+
+    rolimon_values = await grab_values.json();
+
+}
 
 async function send_inbound(){
 
@@ -72,11 +94,15 @@ async function send_inbound(){
         const hold = await inbounds.json();
 
 
+        const trade_date = new Date(hold.data[0].created);
 
+        const temp_prev = new Date(prev_date);
 
-        if(prev_id != hold.data[0].id){
+        
+        if((hold.data).length === 0 || temp_prev >= trade_date){
             return;
         }
+
 
         const inbound_detail = await fetch("https://trades.roblox.com/v2/trades/" + hold.data[0].id, {
             method : "GET",
@@ -92,31 +118,60 @@ async function send_inbound(){
         const assetsA = [];
         const assetsB = [];
 
+
+        let handle_duplicates_A = [];
+        let handle_duplicates_B = [];
+
+
         for(let i = 0; i < (hold_details.participantAOffer.items).length; ++i){
-            assetsA.push(Number(hold_details.participantAOffer.items[i].itemTarget.targetId));
+            
+            let assetID = hold_details.participantAOffer.items[i].itemTarget.targetId;
+            if(handle_duplicates_A[assetID] === 1){
+                ++handle_duplicates_A[assetID];
+            }
+            else{
+                handle_duplicates_A[assetID] = 1;
+            }
+
+            assetsA.push(Number(assetID));
         }
 
         for(let i = 0; i < (hold_details.participantBOffer.items).length; ++i){
-            assetsB.push(Number(hold_details.participantBOffer.items[i].itemTarget.targetId));
+            let assetID = hold_details.participantBOffer.items[i].itemTarget.targetId;
+            if(handle_duplicates_B[assetID] === 1){
+                ++handle_duplicates_B[assetID];
+            }
+            else{
+                handle_duplicates_B[assetID] = 1;
+            }
+
+            assetsB.push(Number(assetID));
         }
 
         const user = await grab_assets(assetsA)
         const requester = await grab_assets(assetsB);
 
-        console.log(requester);
+
+
 
         const assetsA_imgs = [];
         const assetB_imgs = [];
 
         for(let i = 0; i < (user.data).length; ++i){
-            assetsA_imgs.push(user.data[i].imageUrl);
+            for(let j = 0; j < handle_duplicates_A[user.data[i].targetId]; ++j){
+                assetsA_imgs.push(user.data[i].imageUrl);
+            }
         }
+
+
+        
 
         for(let i = 0; i < (requester.data).length; ++i){
-            assetB_imgs.push(requester.data[i].imageUrl);
+            for(let j = 0; j < handle_duplicates_B[requester.data[i].targetId]; ++j){
+                assetB_imgs.push(requester.data[i].imageUrl);
+            }
         }
 
-        console.log(assetB_imgs);
         
 
 
@@ -132,7 +187,38 @@ async function send_inbound(){
         const hold_images = await image_users.json();
 
 
-        const result = await buildTradeImg("bin/Complete_Frame.png", ["bin/Blank_Frame.png", "bin/Trade_Frame.png"], assetsA_imgs, assetB_imgs);
+
+        await retrieve_IDValues();
+
+        let A_rolival = [];
+        let B_rolival = [];
+
+
+        for(let i = 0; i < assetsA.length; ++i){
+
+            let id = rolimon_values.items[assetsA[i]];
+            
+            A_rolival.push([id[2], id[4]]);
+        }
+
+        for(let i = 0; i < assetsB.length; ++i){
+            let id = rolimon_values.items[assetsB[i]];
+
+            B_rolival.push([id[2], id[4]]);
+
+        }
+
+
+        
+
+
+        const result = await buildTradeImg(
+            "bin/Complete_Frame.png",
+             ["bin/Blank_Frame.png", "bin/Trade_Frame.png"],
+             assetsA_imgs, 
+             assetB_imgs, 
+             A_rolival, 
+             B_rolival);
 
 
 
@@ -157,9 +243,7 @@ async function send_inbound(){
             },
             image:     { url: "attachment://trade.png" },
             fields: [
-                { name: "Commit", value: "`abc123`", inline: true },
-                { name: "Duration", value: "2m 14s", inline: true },
-                { name: "Env", value: "prod", inline: true }
+                { name: "Commit", value: "`abc123`", inline: true }
             ],
             footer: {
                 text: "Powered by Arizon • v1.0",
@@ -169,13 +253,15 @@ async function send_inbound(){
         ]
         });
 
-        retrieveANDsaveID(hold.data[0].id);
+        console.log("New Trade Inbound!");
+
+        retrieveANDsaveID(hold.data[0].created);
 
 
 }
 
 
-async function buildTradeImg(main_frame, overlay_frames, A_itemID_urls, B_itemID_urls){
+async function buildTradeImg(main_frame, overlay_frames, A_itemID_urls, B_itemID_urls, assetA_values, assetB_values){
     const resize_Main = await sharp(main_frame).resize({width : 1300, height : 620}).toBuffer();
 
 
@@ -190,6 +276,7 @@ async function buildTradeImg(main_frame, overlay_frames, A_itemID_urls, B_itemID
     composites.push({input : resizeOverlay0, left : 1100, top : 425 });
     composites.push({input : resizedOverlay1, left : 50, top : 100});
     composites.push({input : resizedOverlay1, left : 50, top : 400});
+    
 
     
     for(let i = 0; i < A_itemID_urls.length; ++i){
@@ -240,11 +327,68 @@ async function buildTradeImg(main_frame, overlay_frames, A_itemID_urls, B_itemID
 
         }
 
-
     }
 
-    
+        
+    for(let i = 0; i < assetA_values.length; ++i){
+        
+        const textBuffer = await sharp({
+            text: {
+                text : `<span foreground=\"#0cda2eff\">RAP: ${assetA_values[i][0]}</span>\n<span foreground=\"#4b63ebff\">VALUE: ${assetA_values[i][1]}</span>
+                        `,
+                font: "Arial", 
+                width: 245,
+                height: 55,
+                align: "left",
+                rgba: true
+            }
+        }).png().toBuffer();
 
+        if(i == 0){
+            composites.push({input : textBuffer, left : 48, top : 50});
+        }
+        else if(i == 1){
+            composites.push({input : textBuffer, left : 238, top : 50});
+        }
+        else if(i == 2){
+            composites.push({input : textBuffer, left : 420, top : 50});
+        }
+        else if(i == 3){
+            composites.push({input : textBuffer, left : 596, top : 50});
+        }
+    }
+
+
+
+
+    for(let i = 0; i < assetB_values.length; ++i){
+           
+        const textBuffer = await sharp({
+            text: {
+                text : `<span foreground=\"#0cda2eff\">RAP: ${assetB_values[i][0]}</span>\n<span foreground=\"#4b63ebff\">VALUE: ${assetB_values[i][1]}</span>
+                        `,
+                font: "Arial", 
+                width: 245,
+                height: 55,
+                align: "left",
+                rgba: true
+            }
+        }).png().toBuffer();
+
+        if(i == 0){
+            composites.push({input : textBuffer, left : 48, top : 350});
+        }
+        else if(i == 1){
+            composites.push({input : textBuffer, left : 238, top : 350});
+        }
+        else if(i == 2){
+            composites.push({input : textBuffer, left : 420, top : 350});
+        }
+        else if(i == 3){
+            composites.push({input : textBuffer, left : 596, top : 350});
+        }
+    
+    }
 
     
 
@@ -308,7 +452,6 @@ async function check_offering_items(){
             --i;
         }
 
-        console.log(config.items_send);
 
     }
 
@@ -354,14 +497,17 @@ async function send_ad(){
 
 async function run_send_ad(){
     while(true){
+        
         await send_ad();
         await sleep(1080000);
+        console.log("HELLO");
 
     }
 }
 
 
 async function main(){
+
 
 
     if(!fs.existsSync("storage")){
@@ -372,17 +518,25 @@ async function main(){
         fs.writeFileSync("storage/Recent_T_ID.txt", "", "utf8");
     }
     else{
-        prev_id = Number(fs.readFileSync("storage/Recent_T_ID.txt", "utf8").trim());
+        const date = fs.readFileSync("storage/Recent_T_ID.txt", "utf8").trim();
+        prev_date = date;
+        
     }
 
-/*
+
+
     if(!(await check_roli_exists())){
         return;
     }
-*/
-    //run_send_ad();
+
+
+    run_retrieve_IDValues();
+
+    run_send_ad();
 
     run_send_inbound();
+
+
 
 
 }
