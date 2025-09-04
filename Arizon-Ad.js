@@ -55,6 +55,9 @@ async function grab_assets(asset_IDS){
 
     const response = await asset_images.json();
 
+    console.log(response);
+    console.log(response.status);
+
     return response;
 
 }
@@ -93,13 +96,19 @@ async function send_inbound(){
         });
         const hold = await inbounds.json();
 
+        console.log(inbounds);
+        console.log(inbounds.status);
+
+        if((hold.data).length === 0){
+            return;
+        }
 
         const trade_date = new Date(hold.data[0].created);
 
         const temp_prev = new Date(prev_date);
 
         
-        if((hold.data).length === 0 || temp_prev >= trade_date){
+        if(temp_prev >= trade_date){
             return;
         }
 
