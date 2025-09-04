@@ -99,6 +99,10 @@ async function send_inbound(){
         console.log(inbounds);
         console.log(inbounds.status);
 
+        if(!(inbounds.ok)){
+            return;
+        }
+
         if((hold.data).length === 0){
             return;
         }
