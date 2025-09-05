@@ -53,10 +53,11 @@ async function grab_assets(asset_IDS){
         }
         });
 
+
+
     const response = await asset_images.json();
 
-    console.log(response);
-    console.log(response.status);
+
 
     return response;
 
@@ -96,8 +97,7 @@ async function send_inbound(){
         });
         const hold = await inbounds.json();
 
-        console.log(inbounds);
-        console.log(inbounds.status);
+
 
         if(!(inbounds.ok)){
             return;
@@ -111,10 +111,11 @@ async function send_inbound(){
 
         const temp_prev = new Date(prev_date);
 
-        
+        /*
         if(temp_prev >= trade_date){
             return;
         }
+        */
 
 
         const inbound_detail = await fetch("https://trades.roblox.com/v2/trades/" + hold.data[0].id, {
@@ -132,8 +133,13 @@ async function send_inbound(){
         const assetsB = [];
 
 
+        let asset_image_corr_A = [];
+        let asset_image_corr_B = [];
+
         let handle_duplicates_A = [];
         let handle_duplicates_B = [];
+
+
 
 
         for(let i = 0; i < (hold_details.participantAOffer.items).length; ++i){
@@ -164,26 +170,30 @@ async function send_inbound(){
         const user = await grab_assets(assetsA)
         const requester = await grab_assets(assetsB);
 
-
-
-
-        const assetsA_imgs = [];
-        const assetB_imgs = [];
-
-        for(let i = 0; i < (user.data).length; ++i){
-            for(let j = 0; j < handle_duplicates_A[user.data[i].targetId]; ++j){
-                assetsA_imgs.push(user.data[i].imageUrl);
-            }
-        }
-
-
         
 
-        for(let i = 0; i < (requester.data).length; ++i){
-            for(let j = 0; j < handle_duplicates_B[requester.data[i].targetId]; ++j){
-                assetB_imgs.push(requester.data[i].imageUrl);
+
+        for(let i = 0; i < assetsA.length; ++i){
+            for(let j = 0; j < (user.data).length; ++j){
+                if(assetsA[i] == user.data[j].targetId){
+                    asset_image_corr_A.push(user.data[j].imageUrl);
+                    break;
+                }
             }
         }
+
+        
+        for(let i = 0; i < assetsB.length; ++i){
+            for(let j = 0; j < (requester.data).length; ++j){
+                if(assetsB[i] == requester.data[j].targetId){
+                    asset_image_corr_B.push(requester.data[j].imageUrl);
+                    break;
+                }
+            }
+        }
+
+        console.log(asset_image_corr_A);
+        console.log(asset_image_corr_B);
 
         
 
@@ -228,8 +238,8 @@ async function send_inbound(){
         const result = await buildTradeImg(
             "bin/Complete_Frame.png",
              ["bin/Blank_Frame.png", "bin/Trade_Frame.png"],
-             assetsA_imgs, 
-             assetB_imgs, 
+             asset_image_corr_A, 
+             asset_image_corr_B, 
              A_rolival, 
              B_rolival);
 
@@ -513,7 +523,7 @@ async function run_send_ad(){
         
         await send_ad();
         await sleep(1080000);
-        console.log("HELLO");
+
 
     }
 }
@@ -545,7 +555,7 @@ async function main(){
 
     run_retrieve_IDValues();
 
-    run_send_ad();
+    //run_send_ad();
 
     run_send_inbound();
 
