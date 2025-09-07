@@ -1,0 +1,76 @@
+import config from "../config.json" with {type : 'json'};
+import fs from "fs";
+
+
+
+
+
+export async function send_ad(){
+
+
+    await check_offering_items();
+
+    let body_send = {"player_id" : config.roblox_id, "offer_item_ids" : config.items_send, "request_item_ids" : config.items_request, "request_tags" : config.tags_send};
+
+
+
+    const result = await fetch("https://api.rolimons.com/tradeads/v1/createad", {
+        method: 'POST',
+        headers: {
+            "Content-Type" : "application/json",
+            "Cookie" : "_RoliVerification=" + config.RoliVerification
+        },
+        body: JSON.stringify(body_send)
+    });
+
+    if(result.ok){
+        console.log("Successfully sent a trade ad!");
+    }
+    else{
+        console.log("Failed to send trade ad (Exceeded time limit?).");
+    }
+
+    console.log(result.status);
+
+    const data = await result.json();
+    console.log(data);
+
+}
+
+
+export async function check_offering_items(){
+    const check_inventory = await fetch("https://inventory.roblox.com/v1/users/" + config.roblox_id + "/assets/collectibles?limit=100", {
+        method : "GET",
+        headers : {
+            "Accept" : "application/json"
+        }
+    })
+
+    const response = await check_inventory.json();
+
+    for(let i = 0; i < (config.items_send).length; ++i){
+        const id = config.items_send[i];
+
+        let checker = 0;
+        for(let j = 0; j < (response.data).length; ++j){
+            if(Number(id) === Number(response.data[j].assetId)){
+                checker = 1;
+                break;
+            }
+        }
+
+
+        if(checker == 0){
+            console.log("Removing " + id + " (not in inventory).");
+            config.items_send.splice(i, 1);
+            --i;
+        }
+
+
+    }
+
+    
+    fs.writeFileSync("config.json", JSON.stringify(config, null, 5), "utf8");
+
+}
+
