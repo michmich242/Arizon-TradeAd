@@ -336,6 +336,13 @@ export async function buildTradeImg(main_frame, overlay_frames, A_itemID_urls, B
             method : "GET"
         });
 
+        if(!(response.ok)){
+            --i;
+            await sleep(1000);
+            console.log("Issue fetching image of an item.");
+
+            continue;
+        }
         const resp = await response.arrayBuffer();
         const buf = Buffer.from(resp);
 
@@ -361,6 +368,13 @@ export async function buildTradeImg(main_frame, overlay_frames, A_itemID_urls, B
         const response = await fetch(B_itemID_urls[i], {
             method : "GET"
         });
+
+        if(!(response.ok)){
+            --i;
+            await sleep(1000);
+            console.log("Issue fetching image of an item.");
+            continue;
+        }
 
         const resp = await response.arrayBuffer();
         const buf = Buffer.from(resp);
@@ -479,8 +493,15 @@ export async function buildTradeImg(main_frame, overlay_frames, A_itemID_urls, B
 
     for(let i = 0; i <= 1; ++i){
         const hold_image = await fetch(user_imgs[i], {
-            method : "GET"
+            method : "GET",
         });
+
+        if(!(hold_image.ok)){
+            --i;
+            await sleep(1000);
+            console.log("Issue fetching image of a user.");
+            continue;
+        }
         const resp = await hold_image.arrayBuffer();
         const result = Buffer.from(resp);
 
