@@ -80,7 +80,7 @@ export function retrieveANDsaveID(new_id){
 export async function send_inbound(){
 
 
-    let inb_count = 1;
+    let inb_count = 0;
     let inbounds = null;
     try{
         inbounds = await fetch("https://trades.roblox.com/v1/trades/inbound?limit=10", {
@@ -110,12 +110,17 @@ export async function send_inbound(){
         if((hold.data).length > 4){
             inb_count = 4;
         }
+
         
 
         trade_index = inb_count;
 
         while(trade_index >= 0){
 
+
+            if(!("created" in hold.data[trade_index])){
+                return -1;
+            }
 
             const trade_date = new Date(hold.data[trade_index].created);
 
@@ -126,6 +131,7 @@ export async function send_inbound(){
                 --trade_index;
                 continue;
             }
+                
             
             
             await send_inbound_setup(hold, trade_index);
