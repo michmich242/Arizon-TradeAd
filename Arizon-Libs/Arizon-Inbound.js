@@ -16,6 +16,7 @@ const hook = new WebhookClient({
 
 
 
+let trade_index = 0;
 
 export let prev_date = {value : null};
 
@@ -26,13 +27,18 @@ let rolimon_values = {};
 
 async function grab_assets(asset_IDS){
 
-    const asset_images = await fetch("https://thumbnails.roblox.com/v1/assets?assetIds=" + asset_IDS + "&size=150x150&isCircular=false&format=Png", {
-        method : "GET",
-        headers : {
-            "Accept" : "application/json"
-        }
-        });
-
+    let asset_images = null;
+    try{
+        asset_images = await fetch("https://thumbnails.roblox.com/v1/assets?assetIds=" + asset_IDS + "&size=150x150&isCircular=false&format=Png", {
+            method : "GET",
+            headers : {
+                "Accept" : "application/json"
+            }
+            });
+    }catch(err){
+        console.log("There has been an issue requesting from the asset images: " + err + ". Retrying in 20 seconds.");
+        return -1;
+    }
 
 
     const response = await asset_images.json();
@@ -75,15 +81,21 @@ export async function send_inbound(){
 
 
     let inb_count = 1;
+    let inbounds = null;
+    try{
+        inbounds = await fetch("https://trades.roblox.com/v1/trades/inbound?limit=10", {
+            method : "GET",
 
-    const inbounds = await fetch("https://trades.roblox.com/v1/trades/inbound?limit=10", {
-        method : "GET",
+            headers : {
+                "Cookie" : ".ROBLOSECURITY=" + config.RobloxSecurity
+            }
+            });
+    }catch(err){
+        console.log("There has been an issue requesting from trade inbounds, trying again in 20 seconds." + err);
+        return;
 
-        headers : {
-            "Cookie" : ".ROBLOSECURITY=" + config.RobloxSecurity
-        }
-        });
-        const hold = await inbounds.json();
+    }
+    const hold = await inbounds.json();
 
 
 
@@ -100,7 +112,9 @@ export async function send_inbound(){
         }
         
 
-        for(let trade_index = inb_count; trade_index >= 0; --trade_index){
+        trade_index = inb_count;
+
+        while(trade_index >= 0){
 
 
             const trade_date = new Date(hold.data[trade_index].created);
@@ -109,13 +123,15 @@ export async function send_inbound(){
 
             
             if(temp_prev >= trade_date){
+                --trade_index;
                 continue;
             }
             
             
-            
             await send_inbound_setup(hold, trade_index);
             await sleep(1000);
+            --trade_index;
+
         }
 }
 
@@ -127,14 +143,21 @@ export async function send_inbound_setup(hold, trade_index){
 
 
 
+    let inbound_detail = null;
+    try{
+        inbound_detail = await fetch("https://trades.roblox.com/v2/trades/" + hold.data[trade_index].id, {
+            method : "GET",
 
-    const inbound_detail = await fetch("https://trades.roblox.com/v2/trades/" + hold.data[trade_index].id, {
-        method : "GET",
-
-        headers : {
-            "Cookie" : ".ROBLOSECURITY=" + config.RobloxSecurity
-        }
-    });
+            headers : {
+                "Cookie" : ".ROBLOSECURITY=" + config.RobloxSecurity
+            }
+        });
+    }catch(err){
+        console.log("Errof grabbing trade details: " + err + ". Retrying in 5 seconds.");
+        ++trade_index;
+        await sleep(4000);
+        return;
+    }
 
     const hold_details = await inbound_detail.json();
 
@@ -180,6 +203,11 @@ export async function send_inbound_setup(hold, trade_index){
     const user = await grab_assets(assetsA)
     const requester = await grab_assets(assetsB);
 
+    if(user === -1 || requester === -1){
+        ++trade_index;
+        return;
+    }
+
     
 
 
@@ -209,19 +237,39 @@ export async function send_inbound_setup(hold, trade_index){
 
 
     const hold_userIDS = [hold_details.participantAOffer.user.id, hold_details.participantBOffer.user.id];
-    const image_users = await fetch("https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=" + hold_userIDS + "&size=150x150&format=Png&isCircular=true", {
-        method : "GET",
-        headers : {
-            "Accept" : "application/json"
-        }
-    });
+
+    let image_users = null;
+    try{
+        image_users = await fetch("https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=" + hold_userIDS + "&size=150x150&format=Png&isCircular=true", {
+            method : "GET",
+            headers : {
+                "Accept" : "application/json"
+            }
+        });
+    }catch(err){
+        console.log("There has been an issue grabbing the users avatar img: " + err + ". Retrying in 20 seconds");
+        ++trade_index;
+        return;
+    }
 
     const hold_images = await image_users.json();
     console.log(hold_images);
 
+    const user_img_order = [];
 
+    if(hold_images.data[0].targetId === config.roblox_id){
+        user_img_order.push(hold_images.data[0].imageUrl);
+        user_img_order.push(hold_images.data[1].imageUrl);
+    }
+    else if(hold_images.data[0].targetId !== config.roblox_id){
+        user_img_order.push(hold_images.data[1].imageUrl);
+        user_img_order.push(hold_images.data[0].imageUrl);
+    }
+    else{
+        console.log("There has been an issue grabbing thumbnails of users.");
+        return;
+    }
 
-    await retrieve_IDValues();
 
     let A_rolival = [];
     let B_rolival = [];
@@ -252,9 +300,12 @@ export async function send_inbound_setup(hold, trade_index){
         asset_image_corr_B, 
         A_rolival, 
         B_rolival,
-        [hold_images.data[0].imageUrl, hold_images.data[1].imageUrl]);
+        user_img_order);
 
 
+    if(result === -1){
+        ++trade_index;
+    }
 
     await hook.send({
     username: hold_details.participantAOffer.user.displayName,
@@ -332,9 +383,18 @@ export async function buildTradeImg(main_frame, overlay_frames, A_itemID_urls, B
 
     
     for(let i = 0; i < A_itemID_urls.length; ++i){
-        const response = await fetch(A_itemID_urls[i], {
-            method : "GET"
+
+        let response = null;
+        try{
+            response = await fetch(A_itemID_urls[i], {
+                method : "GET"
         });
+        }catch(err){
+            console.log("There has been an issue grabbing one of the item images: " + err + ". Retrying in 5 seconds.");
+            await sleep(5000);
+            --i;
+            continue;
+        }
 
         if(!(response.ok)){
             --i;
@@ -365,9 +425,17 @@ export async function buildTradeImg(main_frame, overlay_frames, A_itemID_urls, B
 
     for(let i = 0; i < B_itemID_urls.length; ++i){
         
-        const response = await fetch(B_itemID_urls[i], {
-            method : "GET"
-        });
+        let response = null;
+        try{
+            response = await fetch(B_itemID_urls[i], {
+                method : "GET"
+            });
+        }catch(err){
+             console.log("There has been an issue grabbing one of the item images: " + err + ". Retrying in 5 seconds.");
+            await sleep(5000);
+            --i;
+            continue;        
+        }
 
         if(!(response.ok)){
             --i;
@@ -492,9 +560,14 @@ export async function buildTradeImg(main_frame, overlay_frames, A_itemID_urls, B
 
 
     for(let i = 0; i <= 1; ++i){
-        const hold_image = await fetch(user_imgs[i], {
-            method : "GET",
-        });
+        let hold_image = null;
+        try{
+            hold_image = await fetch(user_imgs[i], {
+                method : "GET",
+            });
+        }catch(err){
+            console.log("Issue grabbing users profiles, retrying in 5 seconds")
+        }
 
         if(!(hold_image.ok)){
             --i;
