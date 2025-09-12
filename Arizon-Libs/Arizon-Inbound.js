@@ -4,7 +4,6 @@ import {Client, Events, GatewayIntentBits, WebhookClient} from "discord.js";
 import fs from "fs";
 import {sleep} from "../Arizon-Ad.js";
 
-
 const client = new Client({intents : [
     GatewayIntentBits.Guilds
 ]});
@@ -299,7 +298,7 @@ export async function send_inbound_setup(hold, trade_index){
     
 
 
-    const result = await buildTradeImg(
+    const [result, sums] = await buildTradeImg(
         "bin/Complete_Frame.png",
         ["bin/Blank_Frame.png", "bin/Trade_Frame.png"],
         asset_image_corr_A, 
@@ -313,9 +312,41 @@ export async function send_inbound_setup(hold, trade_index){
         ++trade_index;
     }
 
+
+
+    let payload = "";
+
+    
+    payload += Math.abs(sums[0].rap - sums[1].rap);
+
+    if(sums[0].rap - sums[1].rap == 0){
+        payload += " RAP EQUAL 🟰";
+    }
+    else if(sums[0].rap - sums[1].rap > 0){
+        payload += " RAP LOSS ❌📉";
+    }
+    else{
+        payload += " RAP WIN ✅📈"
+    }
+
+    payload += "\n";
+    payload += Math.abs(sums[0].value - sums[1].value);
+
+    if(sums[0].value - sums[1].value == 0){
+        payload += " VALUE EQUAL 🟰";
+    }
+    else if(sums[0].value - sums[1].value > 0){
+        payload += " VALUE LOSS ❌📉";
+    }
+    else{
+        payload += " VALUE WIN ✅📈"
+    }
+
+
+
     await hook.send({
     username: hold_details.participantAOffer.user.displayName,
-    avatarURL: hold_images.data[0].imageUrl,
+    avatarURL: user_img_order[0],
 
     files : [
         {
@@ -334,7 +365,7 @@ export async function send_inbound_setup(hold, trade_index){
         },
         image:     { url: "attachment://trade.png" },
         fields: [
-            { name: "Commit", value: "`abc123`", inline: true }
+            { name: "Trade: ", value: payload, inline: false }
         ],
         footer: {
             text: "Powered by Arizon • v1.0",
@@ -572,11 +603,11 @@ export async function buildTradeImg(main_frame, overlay_frames, A_itemID_urls, B
                 method : "GET",
             });
         }catch(err){
-            console.log("Issue grabbing users profiles, retrying in 5 seconds")
+            console.log("Issue grabbing users profiles, retrying in 5 seconds: " + err);
+            
         }
 
-        if(!(hold_image.ok)){
-            --i;
+        if((hold_image == null) || !(hold_image.ok)){
             await sleep(1000);
             console.log("Issue fetching image of a user.");
             continue;
@@ -596,6 +627,6 @@ export async function buildTradeImg(main_frame, overlay_frames, A_itemID_urls, B
 
     
 
-    return sharp(resize_Main).composite(composites).png().toBuffer();
+    return [await sharp(resize_Main).composite(composites).png().toBuffer(), [sumA, sumB]];
 }
 
