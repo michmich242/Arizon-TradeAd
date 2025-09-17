@@ -12,6 +12,12 @@ export async function send_ad(){
 
     let body_send = {"player_id" : config.roblox_id, "offer_item_ids" : config.items_send, "request_item_ids" : config.items_request, "request_tags" : config.tags_send};
 
+    
+    if(config.robux_send > 0){
+        body_send["offer_robux"] = config.robux_send;
+
+    }
+    
 
 
     const result = await fetch("https://api.rolimons.com/tradeads/v1/createad", {
@@ -39,12 +45,22 @@ export async function send_ad(){
 
 
 export async function check_offering_items(){
-    const check_inventory = await fetch("https://inventory.roblox.com/v1/users/" + config.roblox_id + "/assets/collectibles?limit=100", {
-        method : "GET",
-        headers : {
-            "Accept" : "application/json"
-        }
-    })
+    let check_inventory = null;
+    try{
+        check_inventory = await fetch("https://inventory.roblox.com/v1/users/" + config.roblox_id + "/assets/collectibles?limit=100", {
+            method : "GET",
+            headers : {
+                "Accept" : "application/json"
+            }
+        });
+    }
+    catch(err){
+        console.log("Error with retrieving user limiteds, retrying in 5 seconds.");
+        await sleep(5000);
+        check_offering_items();
+
+    }
+
 
     const response = await check_inventory.json();
 

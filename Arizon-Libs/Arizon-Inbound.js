@@ -109,6 +109,9 @@ export async function send_inbound(){
         if((hold.data).length > 4){
             inb_count = 4;
         }
+        else{
+            inb_count = (hold.data).length - 1;
+        }
 
         
 
@@ -166,6 +169,8 @@ export async function send_inbound_setup(hold, trade_index){
 
     const hold_details = await inbound_detail.json();
 
+    console.log(hold_details.participantAOffer.items);
+
 
     const assetsA = [];
     const assetsB = [];
@@ -176,6 +181,7 @@ export async function send_inbound_setup(hold, trade_index){
 
     let handle_duplicates_A = [];
     let handle_duplicates_B = [];
+
 
 
 
@@ -191,6 +197,7 @@ export async function send_inbound_setup(hold, trade_index){
         }
 
         assetsA.push(Number(assetID));
+        
     }
 
     for(let i = 0; i < (hold_details.participantBOffer.items).length; ++i){
@@ -282,15 +289,46 @@ export async function send_inbound_setup(hold, trade_index){
 
     for(let i = 0; i < assetsA.length; ++i){
 
-        let id = rolimon_values.items[assetsA[i]];
-        
-        A_rolival.push([id[2], id[4]]);
+        try{
+
+            
+            let id = rolimon_values.items[assetsA[i]];
+            if(!id || id.length < 4){
+                throw "err";
+            }
+            A_rolival.push([id[2], id[4]]); 
+        }
+
+        catch(err){
+            console.log("Item not found within rolimons, using roblox RAP in replacement.");
+            for(let j = 0; j < (hold_details.participantAOffer.items).length; ++j){
+                if(hold_details.participantAOffer.items[j].itemTarget.targetId == assetsA[i]){
+                    A_rolival.push([hold_details.participantAOffer.items[j].recentAveragePrice, hold_details.participantAOffer.items[j].recentAveragePrice]);
+                }
+            }
+        }
     }
 
     for(let i = 0; i < assetsB.length; ++i){
-        let id = rolimon_values.items[assetsB[i]];
+        try{
 
-        B_rolival.push([id[2], id[4]]);
+
+            let id = rolimon_values.items[assetsB[i]];
+
+            if(!id || id.length < 4){
+                throw "err";
+            }
+
+            B_rolival.push([id[2], id[4]]);
+        }
+        catch(err){
+            console.log("Item not found within rolimons, using roblox RAP in replacement.");
+            for(let j = 0; j < (hold_details.participantBOffer.items).length; ++j){
+                if(hold_details.participantBOffer.items[j].itemTarget.targetId == assetsB[i]){
+                    B_rolival.push([hold_details.participantBOffer.items[j].recentAveragePrice, hold_details.participantBOffer.items[j].recentAveragePrice]);
+                }
+            }
+        }
 
     }
 

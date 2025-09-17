@@ -99,7 +99,12 @@ async function main(){
 
     run_send_ad();
 
-    run_send_inbound();
+
+    if(config.Trade_Inbounds == true){
+        run_retrieve_IDValues();
+
+        run_send_inbound();
+    }
 
 
 
