@@ -1,4 +1,5 @@
 {
+     "Trade_Inbounds": true,
      "roblox_id": 123456789,
      "RoliVerification": "REPLACE-WITH-YOUR-ROLIMONS-VERIFICATION",
      "RobloxSecurity": "REPLACE-WITH-YOUR-ROBLOX-COOKIES",
@@ -25,5 +26,7 @@
           "rap",
           "robux",
           "projecteds"
-     ]
+     ],
+     "robux_send": 250
+
 }
