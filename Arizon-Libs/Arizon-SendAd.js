@@ -1,5 +1,6 @@
 import config from "../config.json" with {type : 'json'};
 import fs from "fs";
+import {sleep} from "../Arizon-Ad.js"
 
 
 
@@ -58,11 +59,20 @@ export async function check_offering_items(){
         console.log("Error with retrieving user limiteds, retrying in 5 seconds.");
         await sleep(5000);
         check_offering_items();
-
+        return; 
     }
 
+    let response = null
 
-    const response = await check_inventory.json();
+    try{
+        response = await check_inventory.json();
+    }
+    catch(err){
+        console.log("There has been an issue parsing the content type, retrying in 5 seconds: " + err);
+        await sleep(5000);
+        check_offering_items();
+        return; 
+    }
 
     for(let i = 0; i < (config.items_send).length; ++i){
         const id = config.items_send[i];

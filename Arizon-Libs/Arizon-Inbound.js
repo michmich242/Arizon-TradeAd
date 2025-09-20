@@ -39,8 +39,15 @@ async function grab_assets(asset_IDS){
         return -1;
     }
 
+        let response = null;
 
-    const response = await asset_images.json();
+    try{
+        response = await asset_images.json();
+    }
+    catch(err){
+        console.log("There has been an issue grabbing the content type of the user images" + err);
+        return -1;
+    }
 
 
 
@@ -58,7 +65,12 @@ export async function retrieve_IDValues(){
         }
     });
 
-    rolimon_values = await grab_values.json();
+    try{
+        rolimon_values = await grab_values.json();
+    }
+    catch(err){
+        console.log("There has been an issue retrieving the ID's from rolimons from the content type, retrying again later: " + err);
+    }
 
 }
 
@@ -94,53 +106,66 @@ export async function send_inbound(){
         return;
 
     }
-    const hold = await inbounds.json();
+    
+
+    let hold = null;
 
 
 
-        if(!(inbounds.ok)){
-            return;
+
+    if(!(inbounds.ok)){
+        return;
+    }
+
+    try{
+        hold = await inbounds.json();
+    }
+    catch(err){
+        console.log("There was an issue reading the content type of the trades API, retrying in 20 seconds: " + err);
+        return;
+    }
+
+
+
+    if((hold.data).length === 0){
+        return;
+    }
+
+    if((hold.data).length > 4){
+        inb_count = 4;
+    }
+    else{
+        inb_count = (hold.data).length - 1;
+    }
+
+    
+
+    trade_index = inb_count;
+
+    while(trade_index >= 0){
+
+
+        if(!("created" in hold.data[trade_index])){
+            return -1;
         }
 
-        if((hold.data).length === 0){
-            return;
-        }
+        const trade_date = new Date(hold.data[trade_index].created);
 
-        if((hold.data).length > 4){
-            inb_count = 4;
-        }
-        else{
-            inb_count = (hold.data).length - 1;
-        }
+        const temp_prev = new Date(prev_date.value);
 
         
-
-        trade_index = inb_count;
-
-        while(trade_index >= 0){
-
-
-            if(!("created" in hold.data[trade_index])){
-                return -1;
-            }
-
-            const trade_date = new Date(hold.data[trade_index].created);
-
-            const temp_prev = new Date(prev_date.value);
-
-            
-            if(temp_prev >= trade_date){
-                --trade_index;
-                continue;
-            }
-                
-            
-            
-            await send_inbound_setup(hold, trade_index);
-            await sleep(1000);
+        if(temp_prev >= trade_date){
             --trade_index;
-
+            continue;
         }
+            
+        
+        
+        await send_inbound_setup(hold, trade_index);
+        await sleep(1000);
+        --trade_index;
+
+    }
 }
 
 
@@ -167,9 +192,18 @@ export async function send_inbound_setup(hold, trade_index){
         return;
     }
 
-    const hold_details = await inbound_detail.json();
+    let hold_details = null;
+    try{
+        hold_details = await inbound_detail.json();
 
-    console.log(hold_details.participantAOffer.items);
+    }
+    catch(err){
+        console.log("Error parsing a specific trade details, retrying again in 5 seconds." + err);
+        send_inbound_setup(hold, trade_index);
+        return;
+    }
+
+
 
 
     const assetsA = [];
@@ -264,7 +298,15 @@ export async function send_inbound_setup(hold, trade_index){
         return;
     }
 
-    const hold_images = await image_users.json();
+    let hold_images = null;
+
+    try{
+        hold_images = await image_users.json();
+    }
+    catch(err){
+        console.log("There has been an issue grabbing the URL of the users images, from the content type: " + err);
+        return;
+    }
     console.log(hold_images);
 
     const user_img_order = [];

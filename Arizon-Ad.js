@@ -95,8 +95,6 @@ async function main(){
     }
 
 
-    run_retrieve_IDValues();
-
     run_send_ad();
 
 
