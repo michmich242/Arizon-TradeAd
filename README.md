@@ -34,7 +34,6 @@ This bot sends real-time inbound trade notifications to your Discord server, inc
 ## 🛠️ Built With
 
 - **Node.js** – Core trade handling  
-- **discord.py** – Discord embeds & notifications  
 - **REST APIs** – Fetch Roblox item/market data  
 
 ---
