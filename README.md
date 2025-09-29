@@ -15,6 +15,20 @@ This bot sends real-time inbound trade notifications to your Discord server, inc
 - 🖼 **Trade Preview with Images** – Item icons displayed in rich embeds  
 - 🤖 **Discord Bot Integration** – Fully automated in your server  
 
+<br></br>
+
+
+
+
+
+<p><strong>Trade Inbound Example:<strong></p>
+<img src="./bin/Trade-Inbound.png" alt="Trade Comparison Example" width="600"/>
+
+<br></br>
+
+<p><strong>Trade Comparison Example:<strong></p>
+<img src="./bin/Trade-Compare.png" alt="Trade Comparison Example" width="600"/>
+
 ---
 
 ## 🛠️ Built With
@@ -81,7 +95,7 @@ Configure the config.json to your roblox account:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/Arizon-Trade-AD.git
+   https://github.com/michmich242/Arizon-TradeAd.git
    cd into Arizon-TradeAd (Go inside that folder)
    ```
 
