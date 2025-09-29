@@ -95,7 +95,7 @@ Configure the config.json to your roblox account:
 
 1. Clone the repository:
    ```bash
-   https://github.com/michmich242/Arizon-TradeAd.git
+   git clone https://github.com/michmich242/Arizon-TradeAd.git
    cd into Arizon-TradeAd (Go inside that folder)
    ```
 
